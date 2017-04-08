@@ -19,6 +19,12 @@ class DBusNode:
             self.__dict__['proxy'] = self.bus.get(self.service, self.path)
         return self.__dict__['proxy']
 
+    def __getattr__(self, name):
+        try:
+            return self.__getattribute__(name)
+        except AttributeError:
+            return getattr(self.proxy, name)
+
     def clear_cache(self):
         del self.__dict__['proxy']
 
@@ -59,16 +65,22 @@ class DBusGattService(DBusNode):
 class DBusGattCharacteristic(DBusNode):
     pass
 
+if __name__ == "__main__":
+    from coiot import BleClient
 
-from .coiot import BleClient
-ble = CoiotBleClient()
-for a, d in ble.devices.items():
-    print('device', a)
-    for u, s in d.services.items():
-        print('\t', u)
-print(ble.get_services_by_uuid(0x1815))
-cc = ble.get_characteristics_by_uuid(0x1815, 0x2a56)
-print(cc)
-for c in cc.values():
-    print(c.proxy.ReadValue({}))
-    c.proxy.WriteValue([1], {})
+    hci0 = DBusBluez().adapters['hci0']
+    hci0.proxy.Powered = True
+
+    ble = BleClient(hci0)
+    ble.connect()
+
+    for a, d in ble.devices.items():
+        print('device', a)
+        for u, s in d.services.items():
+            print('\t', u)
+    print(ble.get_services_by_uuid(0x1815))
+    cc = ble.get_characteristics_by_uuid(0x1815, 0x2a56)
+    print(cc)
+    for c in cc.values():
+        print(c.proxy.ReadValue({}))
+        c.proxy.WriteValue([0], {})

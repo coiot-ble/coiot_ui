@@ -8,8 +8,8 @@ def formatUUID(*uuids):
     return tuple(uuid_r) if len(uuid_r) > 1 else uuid_r[0]
 
 class BleClient:
-    def __init__(self):
-        self.adapter = DBusBluez().adapters['hci0']
+    def __init__(self, adapter):
+        self.adapter = adapter
 
     @property
     def devices(self):
@@ -34,3 +34,7 @@ class BleClient:
                     r[a] = c
                     break
         return r
+
+    def connect(self):
+        for d in self.devices.values():
+            d.proxy.Connect()

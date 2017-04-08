@@ -1,3 +1,7 @@
+from .ble_device import DBusBluez
+from .coiot import BleClient
+
+
 devices = {
     "1": {
         "type": "oven",
@@ -5,16 +9,11 @@ devices = {
         "image": lambda d: "oven_2.png" if not d['on'] else "oven_2_on.png"
         },
     "2": {
-        "type":"lamp",
-        "on": False,
-        "image": lambda d: "light_2.png" if not d['on'] else "light_2_on.png"
-        },
-    "3": {
         "type":"speaker",
         "on": False,
         "image": "speaker_2.png"
         },
-    "4": {
+    "3": {
         "type":"coffee machine",
         "on": False,
         "image": lambda d: "coffee_machine_2.png" if not d['on'] else "coffee_machine_2_on.png"
@@ -123,3 +122,44 @@ class CoiotWs:
         path = [p for p in request.split("/") if p != ""]
         return self.route_sub_set(path[1:], data, "version",
                 v1 = (self.set_v1, []))
+
+class CoiotLamp:
+    def __init__(self, device):
+        self.device = device
+        self.type = "lamp"
+
+    @property
+    def on(self):
+        return bool(self.device.ReadValue({})[0])
+
+    @on.setter
+    def on(self, value):
+        self.device.WriteValue([int(value)], {})
+
+    def image(self, d):
+        return "light_2.png" if not self.on else "light_2_on.png"
+
+    def keys(self):
+        return ["on", "image", "type"]
+
+    def items(self):
+        return { n: self[n] for n in self.keys() }.items()
+
+    def __setitem__(self, key, value):
+        setattr(self, key, value)
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __iter__(self):
+        return iter(self.keys())
+
+hci0 = DBusBluez().adapters['hci0']
+hci0.Powered = True
+ble_client = BleClient(hci0)
+ble_client.connect()
+
+cc = ble_client.get_characteristics_by_uuid(0x1815, 0x2a56)
+for name, ble_device in cc.items():
+    devices[name] = CoiotLamp(ble_device)
+    print("add lamp", name)
