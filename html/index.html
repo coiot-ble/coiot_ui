@@ -165,6 +165,7 @@
 		}
 	}
 
+	var refreshing = false;
 	function refresh_devices_cb(js) {
 		for(var id in js) {
 			var added = [];
@@ -176,10 +177,14 @@
 			console.log("update #"+id);
 			device.refresh_js(js[id]);
 		}
+		refreshing = false;
 	}
 
 	function refresh_all() {
-		http_async('GET', '/ws/v1/device/*/*', refresh_devices_cb);
+		if(!refreshing) {
+			refreshing = true;
+			http_async('GET', '/ws/v1/device/*/*', refresh_devices_cb);
+		}
 	}
 
 	var refresh_interval;
