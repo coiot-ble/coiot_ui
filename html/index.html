@@ -95,16 +95,6 @@
 		throw Error("no such device "+id);
 	}
 
-	function put_device_refresh_cb(id) {
-		return function(txt) {
-			http_async('GET', '/ws/v1/device/'+id+'/*', function(js) {
-				var device = find_device(id);
-				console.log("update #"+id);
-				device.refresh_js(js);
-			});
-		};
-	}
-
 	class Device {
 		constructor(id, imgurl, on) {
 			this.id = id;
@@ -114,7 +104,7 @@
 			this.handle.onmousedown = function() {
 				this.state = !this.state;
 				http_async('PUT', '/ws/v1/device/'+id+'/on',
-					put_device_refresh_cb(id),
+					null,
 					this.state);
 			};
 			this.refresh(imgurl, on);
@@ -139,7 +129,9 @@
 			if (xmlHttp.readyState == 4) {
 				switch(xmlHttp.status) {
 				case 200:
-					callback(JSON.parse(xmlHttp.responseText));
+					if(callback !== null) {
+						callback(JSON.parse(xmlHttp.responseText));
+					}
 					break;
 				case 204:
 					callback(undefined);
