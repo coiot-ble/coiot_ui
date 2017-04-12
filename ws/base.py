@@ -1,4 +1,4 @@
-from .ble_device import DBusBluez
+from .coiot_device import DBusCoiot
 from .coiot import BleClient
 
 
@@ -126,21 +126,20 @@ class CoiotWs:
 class CoiotLamp:
     def __init__(self, device):
         self.device = device
-        self.type = "lamp"
 
     @property
     def on(self):
-        return bool(self.device.ReadValue({})[0])
+        return self.device.proxy.On
 
     @on.setter
     def on(self, value):
-        self.device.WriteValue([int(value)], {})
+        self.device.proxy.On = value
 
     def image(self, d):
         return "light_2.png" if not self.on else "light_2_on.png"
 
     def keys(self):
-        return ["on", "image", "type"]
+        return ["on", "image"]
 
     def items(self):
         return { n: self[n] for n in self.keys() }.items()
@@ -154,12 +153,8 @@ class CoiotLamp:
     def __iter__(self):
         return iter(self.keys())
 
-hci0 = DBusBluez().adapters['hci0']
-hci0.Powered = True
-ble_client = BleClient(hci0)
-ble_client.connect()
-
-cc = ble_client.get_characteristics_by_uuid(0x1815, 0x2a56)
-for name, ble_device in cc.items():
-    devices[name] = CoiotLamp(ble_device)
-    print("add lamp", name)
+b = DBusCoiot()
+for i, device in b.devices.items():
+    if device.proxy.Type == "Lamp":
+        devices[device.proxy.Name] = CoiotLamp(device)
+        print("add lamp", device.proxy.Name)
